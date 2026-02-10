@@ -7,13 +7,15 @@ import mss
 import cv2
 import numpy as np
 import time
-try:
-    import pygetwindow as gw
-except ImportError:
-    print("Installing pygetwindow...")
-    import subprocess
-    subprocess.check_call(['pip', 'install', 'pygetwindow'])
-    import pygetwindow as gw
+# try:
+#     import pygetwindow as gw
+# except ImportError:
+#     print("Installing pygetwindow...")
+#     import subprocess
+#     subprocess.check_call(['pip', 'install', 'pygetwindow'])
+#     import pygetwindow as gw
+
+import window_utils as gw
 
 import config
 

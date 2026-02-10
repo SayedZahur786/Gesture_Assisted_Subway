@@ -27,7 +27,7 @@ SCORE_REGION = {
 
 # ==================== OCR SETTINGS ====================
 # Path to Tesseract OCR executable (update if needed)
-TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 # OCR configuration
 OCR_CONFIG = '--psm 7 -c tessedit_char_whitelist=0123456789'  # Digits only, single line
