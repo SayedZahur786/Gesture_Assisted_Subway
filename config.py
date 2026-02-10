@@ -12,7 +12,7 @@ SCORE_FREEZE_DURATION = 5  # Seconds of no score change to detect game over
 
 # ==================== GAME WINDOW SETTINGS ====================
 # Window title to detect the game (partial match works)
-GAME_WINDOW_TITLE = "Subway"  # Matches "Subway Surfers" or any window with "Subway"
+GAME_WINDOW_TITLE = "Subway Surfers"  # Matches "Subway Surfers" or any window with "Subway"
 
 # ==================== SCORE REGION COORDINATES ====================
 # These coordinates are RELATIVE to the game window (not absolute screen position)
