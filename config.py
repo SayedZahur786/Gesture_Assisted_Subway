@@ -19,10 +19,10 @@ GAME_WINDOW_TITLE = "Subway"  # Matches "Subway Surfers" or any window with "Sub
 # This allows the system to work on any monitor or window position
 # Run calibrate_score_region.py once to set these values
 SCORE_REGION = {
-    'x': 945,  # Left edge of score region (relative to game window)
-    'y': 276,   # Top edge of score region (relative to game window)
-    'width': 288,  # Width of score region
-    'height': 56   # Height of score region
+    'x': 1022,  # Left edge of score region (relative to game window)
+    'y': 279,   # Top edge of score region (relative to game window)
+    'width': 126,  # Width of score region
+    'height': 45   # Height of score region
 }
 
 # ==================== OCR SETTINGS ====================
