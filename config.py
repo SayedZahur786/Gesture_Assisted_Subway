@@ -7,7 +7,7 @@ import os
 
 # ==================== GAME SETTINGS ====================
 MAX_TRIES = 3  # Maximum number of attempts per player
-GAME_OVER_TIMEOUT = 60  # Seconds of continuous OCR failure before forced timeout
+GAME_OVER_TIMEOUT = 180  # Seconds of continuous OCR failure before forced timeout
 SCORE_FREEZE_DURATION = 5  # Seconds of no score change to detect game over
 
 # ==================== GAME WINDOW SETTINGS ====================
