@@ -30,21 +30,38 @@ class RegistrationForm:
         phone = self.phone_entry.get().strip()
         contact_permission = self.contact_var.get()
         
+        # Strip control characters from all fields
+        import re
+        name = re.sub(r'[\x00-\x1f\x7f]', '', name)
+        email = re.sub(r'[\x00-\x1f\x7f]', '', email)
+        phone = re.sub(r'[\x00-\x1f\x7f]', '', phone)
+        
+        # Enforce length limits
+        MAX_NAME_LEN = 100
+        MAX_EMAIL_LEN = 254
+        MAX_PHONE_LEN = 20
+        
         # Validation
         errors = []
         
         if config.REQUIRE_NAME and not name:
             errors.append("Name is required")
+        elif len(name) > MAX_NAME_LEN:
+            errors.append(f"Name must be {MAX_NAME_LEN} characters or fewer")
         
         if config.REQUIRE_EMAIL:
             if not email:
                 errors.append("Email is required")
+            elif len(email) > MAX_EMAIL_LEN:
+                errors.append(f"Email must be {MAX_EMAIL_LEN} characters or fewer")
             elif not self.validate_email(email):
                 errors.append("Invalid email format")
         
         if config.REQUIRE_PHONE:
             if not phone:
                 errors.append("Phone number is required")
+            elif len(phone) > MAX_PHONE_LEN:
+                errors.append(f"Phone number must be {MAX_PHONE_LEN} characters or fewer")
             elif not self.validate_phone(phone):
                 errors.append("Phone number must be at least 10 digits")
         

@@ -148,14 +148,19 @@ class ScoreTracker:
     def monitor_score(self):
         """Background thread to monitor score continuously"""
         last_score = 0
-        no_change_start = None
+        no_change_count = 0           # Consecutive polls with no score change
+        ocr_fail_count = 0            # Consecutive OCR failures
+        required_freeze_polls = max(1, int(config.SCORE_FREEZE_DURATION / config.OCR_POLL_INTERVAL))
+        max_ocr_failures = max(1, int(config.GAME_OVER_TIMEOUT / config.OCR_POLL_INTERVAL))
+        last_debug_time = time.time()
         
         while self.is_monitoring:
             # Capture and extract score
             score_img = self.capture_score_region()
             score = self.extract_score(score_img)
             
-            if score is not None and score >= 0:
+            if score is not None:
+                ocr_fail_count = 0
                 self.current_score = score
                 
                 # Update highest score
@@ -163,21 +168,36 @@ class ScoreTracker:
                     self.highest_score = score
                     self.last_score_time = time.time()
                 
-                # Detect score freeze (potential game over)
-                if score == last_score:
-                    if no_change_start is None:
-                        no_change_start = time.time()
-                    elif time.time() - no_change_start >= config.SCORE_FREEZE_DURATION:
-                        # Score hasn't changed for threshold duration
-                        if self.current_score > 0:  # Only if we have a valid score
-                            self.game_over_detected = True
+                # Detect score freeze: same score as last reading
+                if score == last_score and self.highest_score > 0:
+                    no_change_count += 1
                 else:
-                    no_change_start = None
+                    no_change_count = 0
                     last_score = score
+            else:
+                # OCR failed — treat as "no change" since the screen
+                # likely still shows the same content
+                ocr_fail_count += 1
+                if self.highest_score > 0:
+                    no_change_count += 1
             
-            # Check timeout (no score updates for too long)
-            if time.time() - self.last_score_time > config.GAME_OVER_TIMEOUT:
+            # Game over if score frozen for enough consecutive polls
+            if no_change_count >= required_freeze_polls and self.highest_score > 0:
+                print(f"\n🛑 Game over detected: score frozen at {self.highest_score} "
+                      f"for {no_change_count} consecutive polls")
                 self.game_over_detected = True
+            
+            # Also game over if OCR fails continuously for extended period
+            # (window might have closed or game-over screen appeared)
+            if ocr_fail_count >= max_ocr_failures:
+                print(f"\n🛑 Game over detected: OCR failed {ocr_fail_count} consecutive times")
+                self.game_over_detected = True
+            
+            # Periodic debug output (every 5 seconds)
+            if time.time() - last_debug_time >= 5:
+                print(f"  [Score Monitor] OCR={score} | Current={self.current_score} | "
+                      f"High={self.highest_score} | Freeze={no_change_count}/{required_freeze_polls}")
+                last_debug_time = time.time()
             
             # Sleep before next poll
             time.sleep(config.OCR_POLL_INTERVAL)
