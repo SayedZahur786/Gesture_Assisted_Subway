@@ -9,6 +9,7 @@ from registration_form import get_player_data
 from Subway import start_game_interface
 from score_tracker import ScoreTracker
 from data_manager import save_player_session
+from leaderboard import Leaderboard
 import config
 
 def show_thank_you_screen(user_data, scores):
@@ -115,10 +116,19 @@ def main():
             print("Saving session data...")
             save_player_session(user_data, scores)
             
-            # Step 5: Show thank you screen
+            # Step 5: Show leaderboard
+            print("Displaying leaderboard...")
+            try:
+                lb = Leaderboard()
+                lb.print_to_terminal()
+                lb.display()
+            except Exception as e:
+                print(f"⚠️ Could not display leaderboard: {e}")
+            
+            # Step 6: Show thank you screen
             show_thank_you_screen(user_data, scores)
             
-            # Step 6: Loop back to registration
+            # Step 7: Loop back to registration
             print(f"\nReturning to registration form for next player...\n")
             time.sleep(1)
     

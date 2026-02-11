@@ -10,13 +10,15 @@ import pytesseract
 import time
 import config
 
-try:
-    import pygetwindow as gw
-except ImportError:
-    print("Installing pygetwindow...")
-    import subprocess
-    subprocess.check_call(['pip', 'install', 'pygetwindow'])
-    import pygetwindow as gw
+# try:
+#     import pygetwindow as gw
+# except ImportError:
+#     print("Installing pygetwindow...")
+#     import subprocess
+#     subprocess.check_call(['pip', 'install', 'pygetwindow'])
+#     import pygetwindow as gw
+
+import window_utils as gw
 
 # Set tesseract path if specified in config
 if hasattr(config, 'TESSERACT_PATH') and config.TESSERACT_PATH:

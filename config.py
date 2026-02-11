@@ -7,31 +7,31 @@ import os
 
 # ==================== GAME SETTINGS ====================
 MAX_TRIES = 3  # Maximum number of attempts per player
-GAME_OVER_TIMEOUT = 180  # Seconds of no score change before timeout prompt
+GAME_OVER_TIMEOUT = 180  # Seconds of continuous OCR failure before forced timeout
 SCORE_FREEZE_DURATION = 5  # Seconds of no score change to detect game over
 
 # ==================== GAME WINDOW SETTINGS ====================
 # Window title to detect the game (partial match works)
-GAME_WINDOW_TITLE = "Subway"  # Matches "Subway Surfers" or any window with "Subway"
+GAME_WINDOW_TITLE = "Subway Surfers"  # Matches "Subway Surfers" or any window with "Subway"
 
 # ==================== SCORE REGION COORDINATES ====================
 # These coordinates are RELATIVE to the game window (not absolute screen position)
 # This allows the system to work on any monitor or window position
 # Run calibrate_score_region.py once to set these values
 SCORE_REGION = {
-    'x': 945,  # Left edge of score region (relative to game window)
-    'y': 276,   # Top edge of score region (relative to game window)
-    'width': 288,  # Width of score region
-    'height': 56   # Height of score region
+    'x': 1024,  # Left edge of score region (relative to game window)
+    'y': 282,   # Top edge of score region (relative to game window)
+    'width': 124,  # Width of score region
+    'height': 40   # Height of score region
 }
 
 # ==================== OCR SETTINGS ====================
 # Path to Tesseract OCR executable (update if needed)
-TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 # OCR configuration
 OCR_CONFIG = '--psm 7 -c tessedit_char_whitelist=0123456789'  # Digits only, single line
-OCR_POLL_INTERVAL = 0.5  # How often to check score (seconds)
+OCR_POLL_INTERVAL = 0.3  # How often to check score (seconds)
 OCR_CONFIDENCE_THRESHOLD = 60  # Minimum confidence for OCR result
 
 # ==================== DATA PERSISTENCE ====================
@@ -68,6 +68,8 @@ WINDOW_NAME = 'Subway Surfers with Pose Detection'
 
 # ==================== DISPLAY SETTINGS ====================
 THANK_YOU_DURATION = 3  # Seconds to show thank you message
+LEADERBOARD_DISPLAY_DURATION = 5  # Seconds to show leaderboard
+LEADERBOARD_TOP_N = 3  # Number of top scores to display
 FPS_DISPLAY_COLOR = (0, 255, 0)  # Green
 STATUS_TEXT_COLOR = (255, 255, 255)  # White
 ERROR_COLOR = (0, 0, 255)  # Red

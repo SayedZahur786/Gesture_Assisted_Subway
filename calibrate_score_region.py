@@ -7,13 +7,15 @@ import mss
 import cv2
 import numpy as np
 import time
-try:
-    import pygetwindow as gw
-except ImportError:
-    print("Installing pygetwindow...")
-    import subprocess
-    subprocess.check_call(['pip', 'install', 'pygetwindow'])
-    import pygetwindow as gw
+# try:
+#     import pygetwindow as gw
+# except ImportError:
+#     print("Installing pygetwindow...")
+#     import subprocess
+#     subprocess.check_call(['pip', 'install', 'pygetwindow'])
+#     import pygetwindow as gw
+
+import window_utils as gw
 
 import config
 
@@ -223,7 +225,18 @@ class ScoreRegionCalibrator:
             print("\n✗ Calibration incomplete - not enough points selected")
     
     def update_config(self, x, y, width, height):
-        """Update config.py with new coordinates"""
+        """Update config.py with new coordinates (with validation)"""
+        # Validate coordinates are safe integers within reasonable bounds
+        MAX_COORD = 10000
+        try:
+            x = max(0, min(int(x), MAX_COORD))
+            y = max(0, min(int(y), MAX_COORD))
+            width = max(1, min(int(width), MAX_COORD))
+            height = max(1, min(int(height), MAX_COORD))
+        except (ValueError, TypeError) as e:
+            print(f"\n⚠️ Invalid coordinate values: {e}")
+            return
+        
         try:
             with open('config.py', 'r', encoding='utf-8') as f:
                 lines = f.readlines()
