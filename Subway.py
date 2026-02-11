@@ -2,7 +2,8 @@
 
 import cv2
 import pyautogui
-from time import time
+import time
+from time import time as current_time
 from math import hypot
 import mediapipe as mp
 import matplotlib.pyplot as plt
@@ -338,6 +339,8 @@ def start_game_interface(user_data=None, max_tries=3, score_tracker=None):
     current_try = 0
     session_scores = []
     session_active = True
+    auto_start_next_try = False  # Flag to skip join hands for next try
+    space_key_cooldown_until = 0  # Timestamp to ignore SPACE presses until
 
 
     # Main loop while webcam is active.
@@ -364,40 +367,81 @@ def start_game_interface(user_data=None, max_tries=3, score_tracker=None):
 
             # Logic loop when game is active.
             if is_playing:
-                # Display session info
+                # Display session info with better spacing
                 if user_data:
                     cv2.putText(current_frame, f"Player: {user_data['name']}", 
-                               (10, frame_h - 90), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 3)
+                               (10, 40), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 3)
                 
                 cv2.putText(current_frame, f"Try: {current_try}/{max_tries}", 
-                           (10, frame_h - 50), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 255), 3)
+                           (10, 80), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 255), 3)
                 
                 if session_scores:
                     best_score = max(session_scores)
                     cv2.putText(current_frame, f"Best: {best_score}", 
-                               (frame_w - 200, frame_h - 50), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 3)
+                               (10, 120), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 3)
                 
-                # Check if game over detected by score tracker
+                # Add instruction for manual score entry
+                if hasattr(config, 'USE_MANUAL_SCORE_ENTRY') and config.USE_MANUAL_SCORE_ENTRY:
+                    cv2.putText(current_frame, "Press SPACE when try ends", 
+                               (10, frame_h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+                
+                # Check if game over detected (manual SPACE or auto-detected)
                 if score_tracker and score_tracker.is_game_over():
-                    # Record the score
-                    final_score = score_tracker.get_final_score()
+                    print("\n" + "="*60)
+                    print("🔍 DEBUG: Game over detected!")
+                    print(f"    Manual entry enabled: {hasattr(config, 'USE_MANUAL_SCORE_ENTRY') and config.USE_MANUAL_SCORE_ENTRY}")
+                    print("="*60)
                     
-                    # If using manual entry mode OR OCR returned 0, ask for manual input
+                    final_score = 0
+                    user_action = "save_end"  # Default action
+                    
+                    # Manual score entry mode - always ask for score
                     if hasattr(config, 'USE_MANUAL_SCORE_ENTRY') and config.USE_MANUAL_SCORE_ENTRY:
+                        print("\n🔍 DEBUG: About to call get_manual_score()...")
+                        print(f"    Try number: {current_try}/{max_tries}")
+                        print(f"    Player: {user_data['name'] if user_data else 'Unknown'}")
+                        
                         try:
                             from manual_score_entry import get_manual_score
+                            print("\n🔍 DEBUG: Manual score entry module imported")
+                            print("🔍 DEBUG: Calling get_manual_score() NOW...")
+                            
                             player_name = user_data['name'] if user_data else "Player"
-                            final_score = get_manual_score(current_try, player_name)
-                            print(f"\n✓ Manual score entered: {final_score}")
+                            # NEW: get_manual_score now returns (score, action) tuple
+                            final_score, user_action = get_manual_score(current_try, max_tries, player_name)
+                            
+                            print(f"\n🔍 DEBUG: get_manual_score() RETURNED: score={final_score}, action={user_action}")
+                            print(f"✓ Manual score entered: {final_score}")
+                            print(f"✓ User action: {user_action}")
                         except Exception as e:
+                            print(f"\n🔍 DEBUG: EXCEPTION in manual score entry!")
+                            print(f"    Exception type: {type(e).__name__}")
+                            print(f"    Exception message: {e}")
+                            import traceback
+                            traceback.print_exc()
                             print(f"⚠️ Could not get manual score: {e}")
-                            # Keep OCR score (even if 0)
+                            final_score = 0
+                            user_action = "save_end"
+                    else:
+                        # OCR mode - use detected score
+                        print("\n🔍 DEBUG: Using OCR mode (manual entry disabled)")
+                        final_score = score_tracker.get_final_score()
+                        user_action = "play_again" if current_try < max_tries else "save_end"
                     
                     session_scores.append(final_score)
                     print(f"\nTry {current_try} completed! Score: {final_score}")
                     
                     # Stop monitoring
                     score_tracker.stop_monitoring()
+                    
+                    # Handle user action
+                    if user_action == "save_end":
+                        print("\n💾 User chose 'Save & End' - ending session...")
+                        session_active = False
+                        break
+                    elif user_action == "play_again":
+                        print(f"\n▶ User chose 'Play Again' - will auto-start Try {current_try + 1}...")
+                        auto_start_next_try = True
                     
                     # Check if session is complete
                     if current_try >= max_tries:
@@ -409,7 +453,28 @@ def start_game_interface(user_data=None, max_tries=3, score_tracker=None):
                     score_tracker.reset()
                     lane_index = 1
                     jump_crouch_index = 1
-
+                    
+                    # Increment try counter for next try
+                    current_try += 1
+                    
+                    # If auto-start is enabled, immediately start next try
+                    if auto_start_next_try:
+                        print(f"\n🚀 Auto-starting Try {current_try}/{max_tries}...")
+                        is_playing = True
+                        auto_start_next_try = False
+                        
+                        # Start score tracker
+                        if score_tracker:
+                            score_tracker.start_monitoring()
+                        
+                        # Press SPACE to restart game (works for tries 2+)
+                        print("Simulating SPACE press to restart game...")
+                        pyautogui.press('space')
+                        time.sleep(0.5)
+                        
+                        # Set cooldown to ignore SPACE presses for 2 seconds
+                        space_key_cooldown_until = current_time() + 2.0
+                        print("⏳ SPACE key cooldown active for 2 seconds...")
                 # --- Horizontal Control Logic ---
 
                 # Determine horizontal movement request from pose.
@@ -554,7 +619,7 @@ def start_game_interface(user_data=None, max_tries=3, score_tracker=None):
         # --- FPS Calculation ---
 
         # Record current time.
-        current_frame_time = time()
+        current_frame_time = current_time()
 
         # Compute FPS if time difference is valid.
         if (current_frame_time - last_frame_time) > 0:
@@ -579,11 +644,16 @@ def start_game_interface(user_data=None, max_tries=3, score_tracker=None):
         # Exit if 'ESC' key (ASCII 27) is pressed.
         if (key_press == 27):
             break
-        
         # Manual game over (SPACE key = ASCII 32) - triggers score entry
         elif (key_press == 32) and is_playing and score_tracker:
-            print("\n⚠️ Manual game-over signal (SPACE pressed)")
-            score_tracker.signal_manual_game_over()
+            # Check if we're in cooldown period (ignore SPACE after auto-start)
+            current_timestamp = current_time()
+            if current_timestamp < space_key_cooldown_until:
+                remaining_cooldown = space_key_cooldown_until - current_timestamp
+                print(f"⏳ SPACE key ignored (cooldown: {remaining_cooldown:.1f}s remaining)")
+            else:
+                print("\n⚠️ Manual game-over signal (SPACE pressed)")
+                score_tracker.signal_manual_game_over()
 
     # Release webcam resources and close window.
     webcam_feed.release()

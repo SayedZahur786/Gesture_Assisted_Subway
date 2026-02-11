@@ -1,39 +1,12 @@
 """
-Leaderboard module - displays top N scores from scores.csv
-Auto-refreshes after every new entry. Uses OpenCV for display.
+Modern, visually appealing leaderboard - displays as Tkinter GUI instead of OpenCV
 """
 
-import cv2
-import numpy as np
-import re
+import tkinter as tk
+from tkinter import ttk
 from data_manager import DataManager
 import config
-
-
-# Maximum display length for names (truncate for rendering safety)
-MAX_DISPLAY_NAME_LEN = 20
-
-
-def sanitize_display_text(text, max_len=MAX_DISPLAY_NAME_LEN):
-    """
-    Sanitize text for safe display rendering.
-    Removes non-printable characters and truncates to max length.
-    """
-    if not isinstance(text, str):
-        text = str(text)
-    # Remove non-printable characters
-    text = re.sub(r'[^\x20-\x7E]', '', text)
-    if len(text) > max_len:
-        text = text[:max_len - 1] + '…'
-    return text
-
-
-def safe_int(value, default=0):
-    """Safely parse an integer from a string/value."""
-    try:
-        return max(0, int(value))
-    except (ValueError, TypeError):
-        return default
+import time
 
 
 class Leaderboard:
@@ -54,7 +27,7 @@ class Leaderboard:
     
     def display(self, duration=None):
         """
-        Display leaderboard as an OpenCV window.
+        Display beautiful leaderboard as Tkinter window.
         
         Args:
             duration: Seconds to show. Defaults to config.LEADERBOARD_DISPLAY_DURATION.
@@ -62,98 +35,176 @@ class Leaderboard:
         if duration is None:
             duration = getattr(config, 'LEADERBOARD_DISPLAY_DURATION', 5)
         
-        # Refresh data before displaying
+        # Refresh data
         self.refresh()
         
-        # Create leaderboard image
-        width, height = 800, 500
-        img = np.zeros((height, width, 3), dtype=np.uint8)
+        root = tk.Tk()
+        root.title("Leaderboard")
+        root.geometry("900x700")
+        root.configure(bg='#0f1419')  # Very dark blue-black
         
-        # Background gradient (dark blue to dark purple)
-        for y in range(height):
-            ratio = y / height
-            b = int(80 - 30 * ratio)
-            g = int(20 + 10 * ratio)
-            r = int(40 + 40 * ratio)
-            img[y, :] = (b, g, r)
+        # Center window
+        root.update_idletasks()
+        x = (root.winfo_screenwidth() // 2) - 450
+        y = (root.winfo_screenheight() // 2) - 350
+        root.geometry(f"900x700+{x}+{y}")
         
-        # Title bar
-        cv2.rectangle(img, (0, 0), (width, 80), (60, 15, 30), -1)
-        cv2.putText(img, "LEADERBOARD", (220, 55),
-                    cv2.FONT_HERSHEY_DUPLEX, 1.8, (0, 255, 255), 3)
+        root.attributes('-topmost', True)
         
-        # Trophy emoji / icon text
-        cv2.putText(img, "TOP 3", (340, 110),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (200, 200, 200), 2)
+        # HEADER - Trophy animation area
+        header_frame = tk.Frame(root, bg='#1a1f2e', pady=40)
+        header_frame.pack(fill='x')
         
-        # Column headers
-        y_start = 150
-        cv2.putText(img, "RANK", (40, y_start),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (150, 150, 150), 2)
-        cv2.putText(img, "PLAYER", (150, y_start),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (150, 150, 150), 2)
-        cv2.putText(img, "HIGH SCORE", (550, y_start),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (150, 150, 150), 2)
+        # Big trophy emoji
+        tk.Label(
+            header_frame,
+            text="🏆",
+            font=('Segoe UI', 80),
+            bg='#1a1f2e'
+        ).pack()
         
-        # Separator line
-        cv2.line(img, (30, y_start + 15), (width - 30, y_start + 15),
-                 (100, 100, 100), 1)
+        tk.Label(
+            header_frame,
+            text="LEADERBOARD",
+            font=('Segoe UI', 36, 'bold'),
+            bg='#1a1f2e',
+            fg='#ffd700'
+        ).pack(pady=(10, 5))
         
-        # Medal colors for ranks
-        medal_colors = [
-            (0, 215, 255),   # Gold (BGR)
-            (192, 192, 192), # Silver
-            (80, 127, 205),  # Bronze
-        ]
+        tk.Label(
+            header_frame,
+            text="TOP PLAYERS",
+            font=('Segoe UI', 14),
+            bg='#1a1f2e',
+            fg='#888888'
+        ).pack()
         
-        if self.entries:
-            for i, entry in enumerate(self.entries[:3]):
-                y_pos = y_start + 70 + i * 90
-                
-                # Row background highlight
-                overlay = img.copy()
-                cv2.rectangle(overlay, (30, y_pos - 35), (width - 30, y_pos + 40),
-                              (80, 30, 50), -1)
-                cv2.addWeighted(overlay, 0.3, img, 0.7, 0, img)
-                
-                # Rank number with medal color
-                rank_color = medal_colors[i] if i < len(medal_colors) else (255, 255, 255)
-                rank_labels = ["1st", "2nd", "3rd"]
-                cv2.putText(img, rank_labels[i], (50, y_pos + 10),
-                            cv2.FONT_HERSHEY_DUPLEX, 1.2, rank_color, 2)
-                
-                # Player name (sanitized)
-                name = sanitize_display_text(entry.get('Name', 'Unknown'))
-                cv2.putText(img, name, (150, y_pos + 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
-                
-                # High score (validated)
-                score = safe_int(entry.get('High_Score', 0))
-                cv2.putText(img, str(score), (590, y_pos + 10),
-                            cv2.FONT_HERSHEY_DUPLEX, 1.2, (0, 255, 0), 2)
+        # MAIN CONTENT
+        content = tk.Frame(root, bg='#0f1419', pady=30)
+        content.pack(fill='both', expand=True, padx=60)
+        
+        if not self.entries:
+            tk.Label(
+                content,
+                text="No scores yet!\nBe the first to play!",
+                font=('Segoe UI', 24),
+                bg='#0f1419',
+                fg='#888888',
+                justify='center'
+            ).pack(expand=True)
         else:
-            cv2.putText(img, "No scores recorded yet!", (180, 280),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1.0, (150, 150, 150), 2)
+            # Medals and colors for ranks
+            medal_data = [
+                ('🥇', '#ffd700', '#2a2000'),  # Gold
+                ('🥈', '#c0c0c0', '#1a1a1a'),  # Silver
+                ('🥉', '#cd7f32', '#1a0f00'),  # Bronze
+            ]
+            
+            for i, entry in enumerate(self.entries[:3]):
+                medal, text_color, bg_color = medal_data[i]
+                
+                # Entry frame
+                entry_frame = tk.Frame(content, bg=bg_color, pady=20, padx=30)
+                entry_frame.pack(fill='x', pady=10)
+                
+                # Apply subtle gradient effect via border
+                entry_frame.config(highlightbackground=text_color, highlightthickness=2)
+                
+                # Rank and medal
+                rank_frame = tk.Frame(entry_frame, bg=bg_color)
+                rank_frame.pack(side='left', padx=10)
+                
+                tk.Label(
+                    rank_frame,
+                    text=medal,
+                    font=('Segoe UI', 48),
+                    bg=bg_color
+                ).pack()
+                
+                tk.Label(
+                    rank_frame,
+                    text=["1ST", "2ND", "3RD"][i],
+                    font=('Segoe UI', 12, 'bold'),
+                    bg=bg_color,
+                    fg=text_color
+                ).pack()
+                
+                # Player info
+                info_frame = tk.Frame(entry_frame, bg=bg_color)
+                info_frame.pack(side='left', fill='x', expand=True, padx=20)
+                
+                name = str(entry.get('Name', 'Unknown'))[:20]
+                tk.Label(
+                    info_frame,
+                    text=name,
+                    font=('Segoe UI', 24, 'bold'),
+                    bg=bg_color,
+                    fg='#ffffff',
+                    anchor='w'
+                ).pack(fill='x')
+                
+                # Email/phone if available
+                email = entry.get('Email', '')
+                if email and email != 'N/A':
+                    tk.Label(
+                        info_frame,
+                        text=f"📧 {email[:30]}",
+                        font=('Segoe UI', 11),
+                        bg=bg_color,
+                        fg='#888888',
+                        anchor='w'
+                    ).pack(fill='x', pady=(5, 0))
+                
+                # Score
+                score_frame = tk.Frame(entry_frame, bg=bg_color)
+                score_frame.pack(side='right', padx=10)
+                
+                try:
+                    score = int(entry.get('High_Score', 0))
+                except:
+                    score = 0
+                
+                tk.Label(
+                    score_frame,
+                    text=str(score),
+                    font=('Segoe UI', 48, 'bold'),
+                    bg=bg_color,
+                    fg=text_color
+                ).pack()
+                
+                tk.Label(
+                    score_frame,
+                    text="POINTS",
+                    font=('Segoe UI', 10),
+                    bg=bg_color,
+                    fg='#888888'
+                ).pack()
         
-        # Footer
-        cv2.putText(img, "Play to get on the leaderboard!", (200, height - 30),
-                    cv2.FONT_HERSHEY_PLAIN, 1.3, (150, 150, 150), 1)
+        # FOOTER
+        footer = tk.Frame(root, bg='#1a1f2e', pady=25)
+        footer.pack(fill='x', side='bottom')
         
-        # Display
-        window_name = 'Leaderboard'
-        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-        cv2.imshow(window_name, img)
-        cv2.waitKey(duration * 1000)
-        cv2.destroyWindow(window_name)
+        tk.Label(
+            footer,
+            text="🎮 Play to get on the leaderboard! 🎮",
+            font=('Segoe UI', 14, 'bold'),
+            bg='#1a1f2e',
+            fg='#00d4ff'
+        ).pack()
+        
+        # Auto-close after duration
+        root.after(duration * 1000, root.destroy)
+        
+        root.mainloop()
         
         print(f"\n🏆 Leaderboard displayed ({len(self.entries)} entries)")
-
+    
     def print_to_terminal(self):
-        """Print leaderboard to terminal (fallback display)."""
+        """Print leaderboard to terminal (fallback/debug)."""
         self.refresh()
         
         print("\n" + "=" * 50)
-        print("🏆 LEADERBOARD - TOP 3 🏆".center(50))
+        print("             🏆 LEADERBOARD - TOP 3 🏆")
         print("=" * 50)
         
         if not self.entries:
@@ -162,9 +213,12 @@ class Leaderboard:
             medals = ["🥇", "🥈", "🥉"]
             for i, entry in enumerate(self.entries[:3]):
                 medal = medals[i] if i < len(medals) else f" {i+1}."
-                name = sanitize_display_text(entry.get('Name', 'Unknown'))
-                score = safe_int(entry.get('High_Score', 0))
-                print(f"  {medal} {name:<20s}  Score: {score}")
+                name = str(entry.get('Name', 'Unknown'))[:20]
+                try:
+                    score = int(entry.get('High_Score', 0))
+                except:
+                    score = 0
+                print(f"  {medal} {name:<20s} Score: {score}")
         
         print("=" * 50)
 

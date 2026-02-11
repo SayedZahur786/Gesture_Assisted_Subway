@@ -19,20 +19,29 @@ GAME_WINDOW_TITLE = "Subway Surfers"  # Matches "Subway Surfers" or any window w
 # This allows the system to work on any monitor or window position
 # Run calibrate_score_region.py once to set these values
 SCORE_REGION = {
-    'x': 1024,  # Left edge of score region (relative to game window)
-    'y': 282,   # Top edge of score region (relative to game window)
-    'width': 124,  # Width of score region
-    'height': 40   # Height of score region
+    'x': 944,  # Left edge of score region (relative to game window)
+    'y': 274,   # Top edge of score region (relative to game window)
+    'width': 294,  # Width of score region
+    'height': 58   # Height of score region
 }
 
 # ==================== OCR SETTINGS ====================
-# Path to Tesseract OCR executable (update if needed)
+# NOTE: OCR is currently DISABLED for this booth system
+# The system uses MANUAL SCORE ENTRY exclusively because:
+# - Browser-based games have hardware acceleration that breaks OCR
+# - Manual entry is more reliable and accurate
+# - OCR code is kept for reference only
+
 # TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-# OCR configuration
+# OCR configuration (NOT USED - kept for reference)
 OCR_CONFIG = '--psm 7 -c tessedit_char_whitelist=0123456789'  # Digits only, single line
 OCR_POLL_INTERVAL = 0.3  # How often to check score (seconds)
 OCR_CONFIDENCE_THRESHOLD = 60  # Minimum confidence for OCR result
+
+# ==================== MANUAL SCORE ENTRY ====================
+# ✓ ACTIVE: Manual score entry is the primary method
+USE_MANUAL_SCORE_ENTRY = True  # Do NOT change - manual entry is required for browser games
 
 # ==================== DATA PERSISTENCE ====================
 # CSV file path for storing player data
@@ -53,8 +62,8 @@ CSV_HEADERS = [
 
 # ==================== REGISTRATION FORM ====================
 FORM_TITLE = "Subway Surfer - Player Registration"
-FORM_WIDTH = 500
-FORM_HEIGHT = 400
+FORM_WIDTH = 600  # Increased from 500 for better visibility
+FORM_HEIGHT = 550  # Increased from 400 for better visibility
 
 # Field validation
 REQUIRE_NAME = True

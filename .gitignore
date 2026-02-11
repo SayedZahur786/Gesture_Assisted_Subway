@@ -1,3 +1,5 @@
 gest/
-__pycache__/  
+__pycache__/
 scores.csv
+*.pyc
+tests/__pycache__/
